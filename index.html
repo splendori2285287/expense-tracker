@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serverless Expense Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 font-sans">
+
+    <div class="max-w-xl mx-auto py-10 px-4">
+        
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-slate-900 mb-2">💸 Expense Tracker</h1>
+            <p class="text-slate-500 text-sm">Running on Vercel Serverless (In-Memory)</p>
+        </header>
+
+        <!-- Input Form -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6 border border-slate-200">
+            <h2 class="text-lg font-semibold mb-4 text-slate-700">Add New Expense</h2>
+            <form id="expenseForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Description</label>
+                    <input type="text" id="descInput" placeholder="e.g. Lunch, Uber, Groceries" required
+                        class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Amount ($)</label>
+                    <input type="number" id="amountInput" placeholder="0.00" step="0.01" required
+                        class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                </div>
+
+                <button type="submit" 
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 flex justify-center items-center gap-2">
+                    <span id="btnText">Add Expense</span>
+                </button>
+            </form>
+            <div id="msgBox" class="mt-3 text-center text-sm hidden"></div>
+        </div>
+
+        <!-- Expense List -->
+        <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+            <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-slate-700">History</h2>
+                <button onclick="fetchExpenses()" class="text-sm text-blue-600 hover:underline">Refresh List</button>
+            </div>
+            
+            <div id="loading" class="p-8 text-center text-slate-400">
+                Loading expenses...
+            </div>
+
+            <ul id="expenseList" class="divide-y divide-slate-100 max-h-96 overflow-y-auto hidden">
+                <!-- Expenses will be injected here -->
+            </ul>
+            
+            <div id="emptyState" class="p-8 text-center text-slate-400 hidden">
+                No expenses recorded yet.
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL = '/api/expenses';
+
+        // DOM Elements
+        const form = document.getElementById('expenseForm');
+        const descInput = document.getElementById('descInput');
+        const amountInput = document.getElementById('amountInput');
+        const expenseList = document.getElementById('expenseList');
+        const loading = document.getElementById('loading');
+        const emptyState = document.getElementById('emptyState');
+        const msgBox = document.getElementById('msgBox');
+
+        // Helper to format currency
+        const formatMoney = (amount) => {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+        };
+
+        // Fetch Expenses from API
+        async function fetchExpenses() {
+            try {
+                loading.classList.remove('hidden');
+                expenseList.classList.add('hidden');
+                emptyState.classList.add('hidden');
+
+                const res = await fetch(API_URL);
+                const data = await res.json();
+
+                renderList(data);
+            } catch (err) {
+                console.error("Failed to fetch", err);
+                showMsg("Failed to connect to API.", "text-red-500");
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        // Render the list
+        function renderList(expenses) {
+            expenseList.innerHTML = '';
+
+            if (!expenses || expenses.length === 0) {
+                emptyState.classList.remove('hidden');
+                expenseList.classList.add('hidden');
+                return;
+            }
+
+            // Sort by newest first
+            expenses.reverse().forEach(expense => {
+                const li = document.createElement('li');
+                li.className = "p-4 flex justify-between items-center hover:bg-slate-50 transition";
+                
+                const date = new Date(expense.date).toLocaleDateString();
+                
+                li.innerHTML = `
+                    <div>
+                        <p class="font-medium text-slate-800">${expense.description}</p>
+                        <p class="text-xs text-slate-400">${date}</p>
+                    </div>
+                    <span class="font-bold ${expense.amount < 0 ? 'text-red-500' : 'text-green-600'}">
+                        ${formatMoney(expense.amount)}
+                    </span>
+                `;
+                expenseList.appendChild(li);
+            });
+
+            expenseList.classList.remove('hidden');
+        }
+
+        // Handle Form Submit
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const description = descInput.value;
+            const amount = amountInput.value;
+            const btn = form.querySelector('button');
+
+            // Disable button
+            btn.disabled = true;
+            btn.classList.add('opacity-75');
+            document.getElementById('btnText').textContent = "Saving...";
+
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ description, amount })
+                });
+
+                if (res.ok) {
+                    descInput.value = '';
+                    amountInput.value = '';
+                    showMsg("Expense added successfully!", "text-green-600");
+                    fetchExpenses(); // Reload list
+                } else {
+                    showMsg("Error saving expense.", "text-red-500");
+                }
+            } catch (err) {
+                showMsg("Network error.", "text-red-500");
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('opacity-75');
+                document.getElementById('btnText').textContent = "Add Expense";
+            }
+        });
+
+        function showMsg(text, colorClass) {
+            msgBox.textContent = text;
+            msgBox.className = `mt-3 text-center text-sm ${colorClass}`;
+            msgBox.classList.remove('hidden');
+            setTimeout(() => {
+                msgBox.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Initial Load
+        fetchExpenses();
+    </script>
+</body>
+</html>
