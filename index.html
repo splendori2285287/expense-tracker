@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Serverless Expense Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom scrollbar for better aesthetics */
+        /* Scrollbar personalizzata */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -17,53 +17,53 @@
 
     <div class="max-w-xl mx-auto py-10 px-4">
         
-        <!-- Header -->
+        <!-- Intestazione -->
         <header class="mb-8 text-center">
-            <h1 class="text-3xl font-bold text-slate-900 mb-2">💸 Expense Tracker</h1>
-            <p class="text-slate-500 text-sm">Running on Vercel Serverless (In-Memory)</p>
+            <h1 class="text-3xl font-bold text-slate-900 mb-2">💸 Gestione Spese</h1>
+            <p class="text-slate-500 text-sm">Running su Vercel Serverless (In-Memory)</p>
         </header>
 
-        <!-- Input Form -->
+        <!-- Form di Inserimento -->
         <div class="bg-white rounded-xl shadow-md p-6 mb-6 border border-slate-200">
-            <h2 class="text-lg font-semibold mb-4 text-slate-700">Add New Expense</h2>
+            <h2 class="text-lg font-semibold mb-4 text-slate-700">Aggiungi Nuova Spesa</h2>
             <form id="expenseForm" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-600 mb-1">Description</label>
-                    <input type="text" id="descInput" placeholder="e.g. Lunch, Uber, Groceries" required
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Descrizione</label>
+                    <input type="text" id="descInput" placeholder="es. Pranzo, Benzina, Spesa" required
                         class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-slate-600 mb-1">Amount ($)</label>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Importo (€)</label>
                     <input type="number" id="amountInput" placeholder="0.00" step="0.01" required
                         class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
                 </div>
 
                 <button type="submit" 
                     class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 flex justify-center items-center gap-2">
-                    <span id="btnText">Add Expense</span>
+                    <span id="btnText">Aggiungi Spesa</span>
                 </button>
             </form>
             <div id="msgBox" class="mt-3 text-center text-sm hidden"></div>
         </div>
 
-        <!-- Expense List -->
+        <!-- Lista Spese -->
         <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
             <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-                <h2 class="text-lg font-semibold text-slate-700">History</h2>
-                <button onclick="fetchExpenses()" class="text-sm text-blue-600 hover:underline">Refresh List</button>
+                <h2 class="text-lg font-semibold text-slate-700">Storico</h2>
+                <button onclick="fetchExpenses()" class="text-sm text-blue-600 hover:underline">Aggiorna Lista</button>
             </div>
             
             <div id="loading" class="p-8 text-center text-slate-400">
-                Loading expenses...
+                Caricamento spese...
             </div>
 
             <ul id="expenseList" class="divide-y divide-slate-100 max-h-96 overflow-y-auto hidden">
-                <!-- Expenses will be injected here -->
+                <!-- Le spese verranno iniettate qui -->
             </ul>
             
             <div id="emptyState" class="p-8 text-center text-slate-400 hidden">
-                No expenses recorded yet.
+                Nessuna spesa registrata.
             </div>
         </div>
 
@@ -72,7 +72,7 @@
     <script>
         const API_URL = '/api/expenses';
 
-        // DOM Elements
+        // Elementi DOM
         const form = document.getElementById('expenseForm');
         const descInput = document.getElementById('descInput');
         const amountInput = document.getElementById('amountInput');
@@ -81,12 +81,12 @@
         const emptyState = document.getElementById('emptyState');
         const msgBox = document.getElementById('msgBox');
 
-        // Helper to format currency
+        // Helper per formattare la valuta
         const formatMoney = (amount) => {
-            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+            return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(amount);
         };
 
-        // Fetch Expenses from API
+        // Recupera Spese dalla API
         async function fetchExpenses() {
             try {
                 loading.classList.remove('hidden');
@@ -98,14 +98,14 @@
 
                 renderList(data);
             } catch (err) {
-                console.error("Failed to fetch", err);
-                showMsg("Failed to connect to API.", "text-red-500");
+                console.error("Errore fetch", err);
+                showMsg("Impossibile connettersi all'API.", "text-red-500");
             } finally {
                 loading.classList.add('hidden');
             }
         }
 
-        // Render the list
+        // Renderizza la lista
         function renderList(expenses) {
             expenseList.innerHTML = '';
 
@@ -115,12 +115,12 @@
                 return;
             }
 
-            // Sort by newest first
+            // Ordina per più recente
             expenses.reverse().forEach(expense => {
                 const li = document.createElement('li');
                 li.className = "p-4 flex justify-between items-center hover:bg-slate-50 transition";
                 
-                const date = new Date(expense.date).toLocaleDateString();
+                const date = new Date(expense.date).toLocaleDateString('it-IT');
                 
                 li.innerHTML = `
                     <div>
@@ -137,7 +137,7 @@
             expenseList.classList.remove('hidden');
         }
 
-        // Handle Form Submit
+        // Gestione Submit Form
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -145,10 +145,10 @@
             const amount = amountInput.value;
             const btn = form.querySelector('button');
 
-            // Disable button
+            // Disabilita bottone
             btn.disabled = true;
             btn.classList.add('opacity-75');
-            document.getElementById('btnText').textContent = "Saving...";
+            document.getElementById('btnText').textContent = "Salvataggio...";
 
             try {
                 const res = await fetch(API_URL, {
@@ -160,17 +160,17 @@
                 if (res.ok) {
                     descInput.value = '';
                     amountInput.value = '';
-                    showMsg("Expense added successfully!", "text-green-600");
-                    fetchExpenses(); // Reload list
+                    showMsg("Spesa aggiunta con successo!", "text-green-600");
+                    fetchExpenses(); // Ricarica lista
                 } else {
-                    showMsg("Error saving expense.", "text-red-500");
+                    showMsg("Errore nel salvataggio.", "text-red-500");
                 }
             } catch (err) {
-                showMsg("Network error.", "text-red-500");
+                showMsg("Errore di rete.", "text-red-500");
             } finally {
                 btn.disabled = false;
                 btn.classList.remove('opacity-75');
-                document.getElementById('btnText').textContent = "Add Expense";
+                document.getElementById('btnText').textContent = "Aggiungi Spesa";
             }
         });
 
@@ -183,7 +183,7 @@
             }, 3000);
         }
 
-        // Initial Load
+        // Caricamento Iniziale
         fetchExpenses();
     </script>
 </body>
