@@ -30,15 +30,17 @@
   <script>
     const API = "/api/expenses";
     const list = document.getElementById("list");
-    let currentExpenses = []; // **Nuova variabile per memorizzare le spese correnti**
+    let currentExpenses = []; // Array per memorizzare le spese correnti
 
+    // 1. Funzione per caricare le spese dal backend
     async function loadExpenses() {
       const res = await fetch(API);
       const { expenses } = await res.json();
-      currentExpenses = expenses; // **Aggiorna le spese correnti**
+      currentExpenses = expenses; // Aggiorna le spese correnti
       render(expenses);
     }
 
+    // 2. Funzione per renderizzare la lista
     function render(expenses) {
       list.innerHTML = "";
       expenses.forEach(exp => {
@@ -51,13 +53,15 @@
           </div>
 
           <div>
-            <button class="edit-btn" onclick="editExpense('${exp.id}')">Modify</button>
+            <button class="edit-btn" onclick="editExpense('${exp.id}')">Modifica</button>
+            <button style="background: red;" onclick="deleteExpense('${exp.id}')">Elimina</button>
           </div>
         `;
         list.appendChild(li);
       });
     }
 
+    // 3. Gestore per l'aggiunta di una nuova spesa (POST)
     document.getElementById("expenseForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -74,30 +78,28 @@
         body: JSON.stringify(expense)
       });
 
+      // Pulisce il form
       description.value = "";
       amount.value = "";
       category.value = "";
       date.value = "";
 
-      loadExpenses(); // La cronologia viene caricata correttamente dopo il POST
+      loadExpenses(); // Ricarica la lista per mostrare la nuova spesa
     });
 
+    // 4. Funzione per la modifica di una spesa (PUT)
     async function editExpense(id) {
-      // Trova l'elemento corrente dai dati caricati
       const existingExpense = currentExpenses.find(e => e.id === id);
 
-      if (!existingExpense) {
-        console.error("Spesa non trovata per l'ID:", id);
-        return;
-      }
+      if (!existingExpense) return;
 
       // Usa il valore esistente come default per il prompt
-      const newDescription = prompt("New description:", existingExpense.description);
-      const newAmount = prompt("New amount:", existingExpense.amount);
-      const newCategory = prompt("New category:", existingExpense.category);
-      const newDate = prompt("New date (YYYY-MM-DD):", existingExpense.date);
+      const newDescription = prompt("Descrizione:", existingExpense.description);
+      const newAmount = prompt("Importo:", existingExpense.amount);
+      const newCategory = prompt("Categoria:", existingExpense.category);
+      const newDate = prompt("Data (YYYY-MM-DD):", existingExpense.date);
 
-      // Costruisci il corpo della richiesta, usando i nuovi valori solo se non nulli/vuoti
+      // Se l'utente preme Annulla (null) o lascia vuoto, usiamo il vecchio valore
       const updateBody = {
         description: newDescription !== null && newDescription !== "" ? newDescription : existingExpense.description,
         amount: newAmount !== null && newAmount !== "" ? newAmount : existingExpense.amount,
@@ -112,6 +114,19 @@
       });
 
       loadExpenses();
+    }
+    
+    // 5. Funzione per l'eliminazione di una spesa (DELETE)
+    async function deleteExpense(id) {
+      if (!confirm("Sei sicuro di voler eliminare questa spesa?")) {
+        return;
+      }
+
+      await fetch(API + "?id=" + id, {
+        method: "DELETE"
+      });
+
+      loadExpenses(); // Ricarica la lista
     }
 
     loadExpenses();
