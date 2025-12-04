@@ -127,7 +127,8 @@
 
         // Helper to format currency
         const formatMoney = (amount) => {
-            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+            // Using 'en-IE' (Ireland) creates English format with Euro symbol (e.g., €10.00)
+            return new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(amount);
         };
 
         // Helper to map category to color (Tailwind classes)
@@ -164,7 +165,6 @@
                 // FALLBACK: Use local array
                 modeBadge.classList.remove('hidden');
                 renderList(localExpenses);
-                // Optional: showMsg("Using local preview mode", "text-orange-600");
             } finally {
                 loading.classList.add('hidden');
             }
@@ -181,7 +181,6 @@
             }
 
             // Sort by newest first
-            // Note: We create a copy with [...expenses] to avoid mutating localExpenses directly
             [...expenses].reverse().forEach(expense => {
                 const li = document.createElement('li');
                 li.className = "p-4 flex justify-between items-center hover:bg-slate-50 transition";
