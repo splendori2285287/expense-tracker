@@ -1,4 +1,4 @@
-// api/expenses.js (Con Log di Debug)
+// api/expenses.js
 
 // Persistent expenses storage via Vercel KV
 const KV_URL = process.env.KV_REST_API_URL;
@@ -6,7 +6,7 @@ const KV_TOKEN = process.env.KV_REST_API_TOKEN;
 
 // Aggiungi un controllo per le variabili d'ambiente
 if (!KV_URL || !KV_TOKEN) {
-    console.error("ERRORE: Variabili Vercel KV mancanti!");
+    console.error("ERRORE: Variabili Vercel KV mancanti! Impossibile connettersi al database.");
 }
 
 async function kvGet(key) {
@@ -46,13 +46,21 @@ export default async function handler(req, res) {
     let expenses = store?.result ? JSON.parse(store.result) : [];
     console.log(`[${method}] Spese caricate: ${expenses.length}`);
 
+    // GET: Recupera tutte le spese
     if (method === "GET") {
         return res.status(200).json({ success: true, expenses });
     }
 
+    // POST: Aggiunge una nuova spesa
     if (method === "POST") {
         const { description, amount, category, date } = req.body || {};
-        // ... (Validazione omessa per brevità) ...
+
+        if (!description || !amount || !category || !date) {
+            return res.status(400).json({
+                success: false,
+                error: "Missing fields"
+            });
+        }
 
         const newExpense = {
             id: Date.now().toString(),
@@ -64,22 +72,58 @@ export default async function handler(req, res) {
 
         expenses.push(newExpense);
 
-        // Verifica se l'operazione di SET è riuscita
         await kvSet("expenses", JSON.stringify(expenses));
-        console.log(`[POST] Spesa aggiunta e tentativo di salvataggio. Nuova dimensione: ${expenses.length}`);
+        console.log(`[POST] Spesa aggiunta e salvata. Nuova dimensione: ${expenses.length}`);
 
         return res
             .status(201)
             .json({ success: true, expense: newExpense, expenses });
     }
 
+    // PUT: Modifica una spesa esistente
     if (method === "PUT") {
-        // ... (Logica PUT omessa per brevità) ...
+        const { id } = req.query;
+        const { description, amount, category, date } = req.body || {};
+
+        const index = expenses.findIndex((e) => e.id === id);
+        if (index === -1)
+            return res
+                .status(404)
+                .json({ success: false, error: "Expense not found" });
+
+        expenses[index] = {
+            ...expenses[index],
+            description: description ?? expenses[index].description, // Usa il valore esistente se non fornito
+            amount: amount ? parseFloat(amount) : expenses[index].amount, // Usa il valore esistente se non fornito
+            category: category ?? expenses[index].category,
+            date: date ?? expenses[index].date
+        };
 
         await kvSet("expenses", JSON.stringify(expenses));
 
         return res.status(200).json({ success: true, expenses });
     }
+    
+    // DELETE: Cancella una spesa esistente
+    if (method === "DELETE") {
+        const { id } = req.query;
 
+        const initialLength = expenses.length;
+        // Filtra per rimuovere la spesa con l'ID specificato
+        expenses = expenses.filter((e) => e.id !== id);
+
+        if (expenses.length === initialLength) {
+            return res
+                .status(404)
+                .json({ success: false, error: "Expense not found" });
+        }
+
+        // Salva l'array aggiornato su Vercel KV
+        await kvSet("expenses", JSON.stringify(expenses));
+
+        return res.status(200).json({ success: true, expenses });
+    }
+
+    // Method not allowed
     return res.status(405).json({ success: false, error: "Method not allowed" });
 }
