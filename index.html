@@ -1,107 +1,121 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Expenses</title>
-  <style>
-    body { font-family: Arial; max-width: 600px; margin: auto; padding: 20px; }
-    form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
-    input, button { padding: 10px; font-size: 16px; }
-    button { background: #0070f3; color: white; border: none; cursor: pointer; }
-    ul { list-style: none; padding: 0; }
-    li { margin: 10px 0; border-bottom: 1px solid #ddd; padding-bottom: 10px; display: flex; justify-content: space-between; }
-    .edit-btn { background: orange; margin-left: 10px; }
-  </style>
+  <meta charset="UTF-8">
+  <title>Expenses</title>
+  <style>
+    body { font-family: Arial; max-width: 600px; margin: auto; padding: 20px; }
+    form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
+    input, button { padding: 10px; font-size: 16px; }
+    button { background: #0070f3; color: white; border: none; cursor: pointer; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 10px 0; border-bottom: 1px solid #ddd; padding-bottom: 10px; display: flex; justify-content: space-between; }
+    .edit-btn { background: orange; margin-left: 10px; }
+  </style>
 </head>
 <body>
 
-  <h1>My Expenses</h1>
+  <h1>My Expenses</h1>
 
-  <form id="expenseForm">
-    <input id="description" placeholder="Description" required />
-    <input id="amount" type="number" step="0.01" placeholder="Amount" required />
-    <input id="category" placeholder="Category" required />
-    <input id="date" type="date" required />
-    <button>Add Expense</button>
-  </form>
+  <form id="expenseForm">
+    <input id="description" placeholder="Description" required />
+    <input id="amount" type="number" step="0.01" placeholder="Amount" required />
+    <input id="category" placeholder="Category" required />
+    <input id="date" type="date" required />
+    <button>Add Expense</button>
+  </form>
 
-  <ul id="list"></ul>
+  <ul id="list"></ul>
 
-  <script>
-    const API = "/api/expenses";
-    const list = document.getElementById("list");
+  <script>
+    const API = "/api/expenses";
+    const list = document.getElementById("list");
+    let currentExpenses = []; // **Nuova variabile per memorizzare le spese correnti**
 
-    async function loadExpenses() {
-      const res = await fetch(API);
-      const { expenses } = await res.json();
-      render(expenses);
-    }
+    async function loadExpenses() {
+      const res = await fetch(API);
+      const { expenses } = await res.json();
+      currentExpenses = expenses; // **Aggiorna le spese correnti**
+      render(expenses);
+    }
 
-    function render(expenses) {
-      list.innerHTML = "";
-      expenses.forEach(exp => {
-        const li = document.createElement("li");
-        li.innerHTML = `
-          <div>
-            <strong>${exp.description}</strong><br>
-            ${exp.category} • ${exp.date}<br>
-            <strong>$${exp.amount.toFixed(2)}</strong>
-          </div>
+    function render(expenses) {
+      list.innerHTML = "";
+      expenses.forEach(exp => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <div>
+            <strong>${exp.description}</strong><br>
+            ${exp.category} • ${exp.date}<br>
+            <strong>$${exp.amount.toFixed(2)}</strong>
+          </div>
 
-          <div>
-            <button class="edit-btn" onclick="editExpense('${exp.id}')">Modify</button>
-          </div>
-        `;
-        list.appendChild(li);
-      });
-    }
+          <div>
+            <button class="edit-btn" onclick="editExpense('${exp.id}')">Modify</button>
+          </div>
+        `;
+        list.appendChild(li);
+      });
+    }
 
-    document.getElementById("expenseForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
+    document.getElementById("expenseForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-      const expense = {
-        description: description.value,
-        amount: amount.value,
-        category: category.value,
-        date: date.value
-      };
+      const expense = {
+        description: description.value,
+        amount: amount.value,
+        category: category.value,
+        date: date.value
+      };
 
-      await fetch(API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(expense)
-      });
+      await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(expense)
+      });
 
-      description.value = "";
-      amount.value = "";
-      category.value = "";
-      date.value = "";
+      description.value = "";
+      amount.value = "";
+      category.value = "";
+      date.value = "";
 
-      loadExpenses();
-    });
+      loadExpenses(); // La cronologia viene caricata correttamente dopo il POST
+    });
 
-    async function editExpense(id) {
-      const newDescription = prompt("New description:");
-      const newAmount = prompt("New amount:");
-      const newCategory = prompt("New category:");
-      const newDate = prompt("New date (YYYY-MM-DD):");
+    async function editExpense(id) {
+      // Trova l'elemento corrente dai dati caricati
+      const existingExpense = currentExpenses.find(e => e.id === id);
 
-      await fetch(API + "?id=" + id, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          description: newDescription,
-          amount: newAmount,
-          category: newCategory,
-          date: newDate
-        })
-      });
+      if (!existingExpense) {
+        console.error("Spesa non trovata per l'ID:", id);
+        return;
+      }
 
-      loadExpenses();
-    }
+      // Usa il valore esistente come default per il prompt
+      const newDescription = prompt("New description:", existingExpense.description);
+      const newAmount = prompt("New amount:", existingExpense.amount);
+      const newCategory = prompt("New category:", existingExpense.category);
+      const newDate = prompt("New date (YYYY-MM-DD):", existingExpense.date);
 
-    loadExpenses();
-  </script>
+      // Costruisci il corpo della richiesta, usando i nuovi valori solo se non nulli/vuoti
+      const updateBody = {
+        description: newDescription !== null && newDescription !== "" ? newDescription : existingExpense.description,
+        amount: newAmount !== null && newAmount !== "" ? newAmount : existingExpense.amount,
+        category: newCategory !== null && newCategory !== "" ? newCategory : existingExpense.category,
+        date: newDate !== null && newDate !== "" ? newDate : existingExpense.date,
+      };
+
+      await fetch(API + "?id=" + id, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateBody)
+      });
+
+      loadExpenses();
+    }
+
+    loadExpenses();
+  </script>
 
 </body>
 </html>
