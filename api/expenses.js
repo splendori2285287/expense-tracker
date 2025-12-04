@@ -93,8 +93,8 @@ export default async function handler(req, res) {
 
         expenses[index] = {
             ...expenses[index],
-            description: description ?? expenses[index].description, // Usa il valore esistente se non fornito
-            amount: amount ? parseFloat(amount) : expenses[index].amount, // Usa il valore esistente se non fornito
+            description: description ?? expenses[index].description,
+            amount: amount ? parseFloat(amount) : expenses[index].amount,
             category: category ?? expenses[index].category,
             date: date ?? expenses[index].date
         };
@@ -109,7 +109,6 @@ export default async function handler(req, res) {
         const { id } = req.query;
 
         const initialLength = expenses.length;
-        // Filtra per rimuovere la spesa con l'ID specificato
         expenses = expenses.filter((e) => e.id !== id);
 
         if (expenses.length === initialLength) {
@@ -118,7 +117,6 @@ export default async function handler(req, res) {
                 .json({ success: false, error: "Expense not found" });
         }
 
-        // Salva l'array aggiornato su Vercel KV
         await kvSet("expenses", JSON.stringify(expenses));
 
         return res.status(200).json({ success: true, expenses });
