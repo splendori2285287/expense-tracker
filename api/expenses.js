@@ -1,42 +1,42 @@
-// This variable lives in the server's memory.
-// WARNING: In Vercel/Serverless, this data will be wiped when the function
-// "cold starts" or after a period of inactivity.
+// Questa variabile vive nella memoria del server.
+// ATTENZIONE: In ambiente Serverless (Vercel), questi dati vengono persi
+// quando la funzione va in "sleep" o viene ridistribuita.
 let memoryExpenses = [
-    { id: 1, description: "Initial Demo Expense", amount: 0, date: new Date().toISOString() }
+    { id: 1, description: "Spesa Demo Iniziale", amount: 0, date: new Date().toISOString() }
 ];
 
 export default function handler(req, res) {
-    // 1. Handle GET requests (Retrieve all expenses)
+    // 1. Gestione richieste GET (Recupera tutte le spese)
     if (req.method === 'GET') {
         return res.status(200).json(memoryExpenses);
     }
 
-    // 2. Handle POST requests (Add a new expense)
+    // 2. Gestione richieste POST (Aggiungi nuova spesa)
     if (req.method === 'POST') {
         try {
             const { description, amount } = req.body;
 
-            // Basic validation
+            // Validazione base
             if (!description || amount === undefined) {
-                return res.status(400).json({ error: 'Description and amount are required' });
+                return res.status(400).json({ error: 'Descrizione e importo sono richiesti' });
             }
 
             const newExpense = {
-                id: Date.now(), // Simple ID generation
+                id: Date.now(), // Generazione ID semplice
                 description,
                 amount: parseFloat(amount),
                 date: new Date().toISOString()
             };
 
-            // Push to our in-memory array
+            // Aggiungi all'array in memoria
             memoryExpenses.push(newExpense);
 
             return res.status(201).json(newExpense);
         } catch (error) {
-            return res.status(500).json({ error: 'Failed to process data' });
+            return res.status(500).json({ error: 'Errore nel processare i dati' });
         }
     }
 
-    // 3. Handle unsupported methods
-    return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
+    // 3. Metodo non supportato
+    return res.status(405).json({ error: `Metodo ${req.method} non consentito` });
 }
