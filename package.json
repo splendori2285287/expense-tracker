@@ -1,0 +1,13 @@
+{
+  "name": "vercel-serverless-expense-tracker",
+  "version": "1.0.0",
+  "description": "Simple in-memory expense tracker for Vercel",
+  "main": "api/expenses.js",
+  "scripts": {
+    "start": "node api/expenses.js"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": "18.x"
+  }
+}
